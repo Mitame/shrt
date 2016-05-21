@@ -18,7 +18,7 @@ import hashlib
 import os
 import time
 
-from flask import request
+from flask import request, jsonify
 from pymongo.errors import DuplicateKeyError
 
 from . import db, app, config
@@ -27,7 +27,7 @@ users = db["users"]
 users.create_index("username", unique=True)
 
 useradd_tokens = db["useradd_tokens"]
-users.create_index("token", unique=True)
+useradd_tokens.create_index("token", unique=True)
 
 
 def hash_password(password, salt=None):
@@ -111,20 +111,66 @@ def create_useradd_token(username=None):
     return
 
 
+def check_code(token):
+    data = useradd_tokens.find_and_modify(
+        {"token": token, "used": False},
+        {"$set": {"used": True}}
+    )
+
+
 @app.route("/api/useradd", methods=["POST"])
 def site_create_user():
     username = request.form["username"]
     password = request.form["password"]
+    is_admin = request.form.get("is_admin")
     if not config["auth"]["anon_can_create_user"]:
         code = request.form.get("code")
-        if code is None:
+        user = get_user()
+        if code is None and user is None:
             return jsonify({
                 "ok": False,
                 "reason": "This site is configured as invite only."
             })
 
+        if code and not check_code(code):
+            return jsonify({
+                "ok": False,
+                "reason": "Code is not valid."
+            })
+
+        elif not user["is_admin"] and not config["auth"]["user_can_create_user"]:
+            return jsonify({
+                "ok": False,
+                "reason": "Users are not allowed to create more users"
+            })
+
+        elif not (user["is_admin"] and config["auth"]["admin_can_create_user"]):
+            return jsonify({
+                "ok": False,
+                "reason": "Admins are not allowed to create users. Check your config."
+            })
+
+    try:
+        if user:
+            is_admin = int(is_admin) and user["is_admin"]
+    except ValueError:
+        is_admin = False
+
+    try:
+        uid = create_user(username, password, is_admin=is_admin)
+
+    except IndexError:
+        return jsonify({
+            "ok": False,
+            "reason": "Username in use"
+        })
+
+    return jsonify({
+        "ok": True
+    })
+
 
 if users.count() == 0:
     password = "aaaa"
-    create_user("root", password)
+    create_user("root", password, is_admin=True)
     print("Root user created: %s:%s" % ("root", password))
