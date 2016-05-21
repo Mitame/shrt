@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # shrt - A _really_ simple link shortener
 # Copyright (C) 2015  Mitame
 #
@@ -14,7 +13,3 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-from shrt import app
-
-app.run(debug=True)
