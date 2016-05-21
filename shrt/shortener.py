@@ -63,7 +63,17 @@ def shorten(target, code=None, hidden=None, item_type="link"):
             else:
                 retries += 1
 
-    return code
+    parsed = urlparse(url_for("link", _external=True, code=code))
+
+    if config["link_shortener"]["convert_punycode"]:
+        try:
+            new_host = idna.decode(parsed.hostname)
+            parsed._replace(hostname=new_host)
+        except ValueError:
+            pass
+    url = urlunparse(parsed)
+
+    return url
 
 
 @app.route("/api/mk", methods=["POST"])
@@ -95,21 +105,13 @@ def mk_ln():
 
     target = request.form["url"]
 
-    code = shorten(
+    url = shorten(
         target,
         code=request.form.get("code"),
         hidden=request.form.get("hidden")
     )
 
-    parsed = urlparse(url_for("link", _external=True, code=code))
 
-    if config["link_shortener"]["convert_punycode"]:
-        try:
-            new_host = idna.decode(parsed.hostname)
-            parsed._replace(hostname=new_host)
-        except ValueError:
-            pass
-    url = urlunparse(parsed)
 
 
     return jsonify({
