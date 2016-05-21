@@ -25,7 +25,7 @@ default_config = {
     "secret_key": b2a_hex(urandom(32)).decode("utf8"),
     "auth": {
         "anon_can_create_user": False,
-        "user_can_create_user": False,
+        "user_can_create_user": True,
         "admin_can_create_user": True,
 
         "anon_can_shrt": True,
