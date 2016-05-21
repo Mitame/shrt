@@ -2,4 +2,4 @@
 Pointless link shortener
 
 # running
-Just run `main.py`
+Just run `shrt.py`
