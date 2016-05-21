@@ -18,10 +18,10 @@ import hashlib
 import os
 import time
 
-from flask import request, jsonify
+from flask import request, jsonify, url_for, render_template, render_template_string
 from pymongo.errors import DuplicateKeyError
 
-from . import db, app, config
+from . import db, app, config, shortener, util
 
 users = db["users"]
 users.create_index("username", unique=True)
@@ -96,19 +96,23 @@ def get_user(username=None):
 
 
 def create_useradd_token(username=None):
+    creator = None
     if username:
-        creator = get_user(username)["_id"]
-    else:
-        creator = None
+        user = get_user(username)
+        if user:
+            creator = user["username"]
 
-    token = util.get_code(do_random=True)
-    useradd_tokens.insert_one({
+
+    token = util.get_code("useradd_token", do_random=True)
+    x = useradd_tokens.insert({
         "token": token,
         "creator": creator,
         "used": False
     })
 
-    return
+    print(x)
+
+    return token
 
 
 def check_code(token):
@@ -116,6 +120,67 @@ def check_code(token):
         {"token": token, "used": False},
         {"$set": {"used": True}}
     )
+
+    return bool(data)
+
+
+@app.route("/api/invite", methods=["POST", "GET"])
+def site_gen_invite_link():
+    if config["auth"]["anon_can_create_user"]:
+        return jsonify({
+            "ok": False,
+            "reason": "Invites are disabled on this site."
+        })
+    user = get_user()
+    if user is None:
+        return jsonify({
+            "ok": False,
+            "reason": "Authentication required"
+        })
+
+    if not user["is_admin"] and not config["auth"]["user_can_create_user"]:
+        return jsonify({
+            "ok": False,
+            "reason": "Users cannot invite others"
+        })
+
+    if not config["auth"]["admin_can_create_user"]:
+        return jsonify({
+            "ok": False,
+            "reason": "admins cannot invite others"
+        })
+
+    token = create_useradd_token(user["username"])
+    url = shortener.shorten(url_for("site_accept_invite", _external=True, code=token), hidden=True)
+
+    return jsonify({
+        "ok": True,
+        "url": url
+    })
+
+
+
+@app.route("/api/accept_invite")
+def site_accept_invite():
+    return render_template_string("""
+    <html>
+    <body>
+    <form action="/api/useradd" method="post">
+
+    <input type="hidden" name="code" value="{{ code }}" />
+
+    <label for="username">Username</label>
+    <input id="username" type="text" name="username" value="{{ username }}" /> <br />
+
+    <label for="password">Password</label>
+    <input type="password" name="password" value="{{ password }}" /> <br />
+
+    <input type="submit" value="Submit" />
+
+    </form>
+    </body>
+    </html>
+    """, code=request.args["code"])
 
 
 @app.route("/api/useradd", methods=["POST"])
@@ -131,20 +196,20 @@ def site_create_user():
                 "ok": False,
                 "reason": "This site is configured as invite only."
             })
-
+            print(code)
         if code and not check_code(code):
             return jsonify({
                 "ok": False,
                 "reason": "Code is not valid."
             })
 
-        elif not user["is_admin"] and not config["auth"]["user_can_create_user"]:
+        if user and not user["is_admin"] and not config["auth"]["user_can_create_user"]:
             return jsonify({
                 "ok": False,
                 "reason": "Users are not allowed to create more users"
             })
 
-        elif not (user["is_admin"] and config["auth"]["admin_can_create_user"]):
+        if user and not (user["is_admin"] and config["auth"]["admin_can_create_user"]):
             return jsonify({
                 "ok": False,
                 "reason": "Admins are not allowed to create users. Check your config."
