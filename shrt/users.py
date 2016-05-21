@@ -17,6 +17,7 @@
 import hashlib
 import os
 import time
+import random
 
 from flask import request, jsonify, url_for, render_template, render_template_string
 from pymongo.errors import DuplicateKeyError
@@ -236,6 +237,6 @@ def site_create_user():
 
 
 if users.count() == 0:
-    password = "aaaa"
+    password = "".join(random.choice(config["link_shortener"]["characters"]) for _ in range(0, 16))
     create_user("root", password, is_admin=True)
     print("Root user created: %s:%s" % ("root", password))
