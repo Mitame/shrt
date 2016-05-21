@@ -37,7 +37,14 @@ def get_id(code):
     return num
 
 
-def shorten(target, code=None, hidden=None, item_type="link"):
+def shorten(target, code=None, hidden=None, item_type="link", internal=False):
+    target_parse = urlparse(target)
+
+    if target_parse.netloc in (urlparse(request.base_url).netloc, "") and not internal:
+        return None
+
+    target = urlunparse(target_parse)
+
     if code is None:
         code = util.get_code(item_type, do_random=hidden)
         is_custom_code = True
@@ -110,9 +117,11 @@ def mk_ln():
         code=request.form.get("code"),
         hidden=request.form.get("hidden")
     )
-
-
-
+    if url is None:
+        return jsonify({
+            "ok": False,
+            "reason": "Unknown",
+        })
 
     return jsonify({
         "ok": True,

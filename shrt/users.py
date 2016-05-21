@@ -111,8 +111,6 @@ def create_useradd_token(username=None):
         "used": False
     })
 
-    print(x)
-
     return token
 
 
@@ -152,7 +150,7 @@ def site_gen_invite_link():
         })
 
     token = create_useradd_token(user["username"])
-    url = shortener.shorten(url_for("site_accept_invite", _external=True, code=token), hidden=True)
+    url = shortener.shorten(url_for("site_accept_invite", _external=True, code=token), hidden=True, internal=True)
 
     return jsonify({
         "ok": True,
@@ -197,7 +195,7 @@ def site_create_user():
                 "ok": False,
                 "reason": "This site is configured as invite only."
             })
-            print(code)
+
         if code and not check_code(code):
             return jsonify({
                 "ok": False,
