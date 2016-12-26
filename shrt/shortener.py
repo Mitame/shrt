@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from flask import redirect, safe_join, request, url_for, jsonify, abort
+from flask import redirect, safe_join, request, url_for, jsonify, abort, send_file
 import time
 import idna
 from urllib.parse import urlparse, urlunparse
@@ -131,11 +131,7 @@ def mk_ln():
 
 @app.route("/")
 def home():
-    if config["link_shortener"]["not_found_redirect"] is not None:
-        return redirect(config["link_shortener"]["not_found_redirect"])
-    else:
-        abort(404)
-
+    return send_file("static/index.html")
 
 
 @app.route("/<string:code>")
@@ -144,4 +140,4 @@ def link(code):
     if data is not None:
         return redirect(data["url"])
     else:
-        return home()
+        return redirect(url_for("home"))

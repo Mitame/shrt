@@ -1,0 +1,30 @@
+<html>
+<head>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+  <script src="/static/shrt.js"></script>
+</head>
+<body>
+  <h2>Shorten URL</h2>
+  <form id="mk" action="/api/mk" method="POST">
+    <div>
+      <label for="mk_url">URL</label>
+      <input type="text" name="url" id="mk_url"/>
+    </div>
+    <div>
+      <label for="mk_hidden">Hidden</label>
+      <input type="checkbox" id="mk_hidden" value="unchecked"/>
+    </div>
+    <div>
+      <input type="submit" />
+    </div>
+  </form>
+  <div>
+    <table id="shrt_table">
+      <tr>
+        <th>Target URL</th>
+        <th>Shortened URL</th>
+      </tr>
+    </table>
+  </div>
+</body>
+</html>
