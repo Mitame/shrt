@@ -70,15 +70,15 @@ def shorten(target, code=None, hidden=None, item_type="link", internal=False):
             else:
                 retries += 1
 
-    parsed = urlparse(url_for("link", _external=True, code=code))
 
     if config["link_shortener"]["convert_punycode"]:
+        print("Attempting to convert punycode")
         try:
+            parsed = urlparse(url_for("link", _external=True, code=code))
             new_host = idna.decode(parsed.hostname)
-            parsed._replace(netloc=new_host)
-        except ValueError:
-            pass
-    url = urlunparse(parsed)
+            url = urlunparse(parsed._replace(netloc=new_host))
+        except ValueError as e:
+            print(e)
 
     return url
 
