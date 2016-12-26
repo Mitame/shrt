@@ -75,7 +75,7 @@ def shorten(target, code=None, hidden=None, item_type="link", internal=False):
     if config["link_shortener"]["convert_punycode"]:
         try:
             new_host = idna.decode(parsed.hostname)
-            parsed._replace(hostname=new_host)
+            parsed._replace(netloc=new_host)
         except ValueError:
             pass
     url = urlunparse(parsed)
